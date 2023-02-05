@@ -3,10 +3,11 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "ssd1306.h"
 
 const char *TAG_I2C = "I2C";
 
-esp_err_t i2c_master_init(void);
+// esp_err_t i2c_master_init(void);
 QueueHandle_t sendQueue;
 
 int8_t i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t cnt);
@@ -19,8 +20,13 @@ static void delay_ms(uint32_t ms)
 
 void read_data(void *parameters)
 {
-    ESP_ERROR_CHECK(i2c_master_init());
+    SSD1306_t ssd1306;
+    i2c_master_init(&ssd1306, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ESP_LOGI(TAG_I2C, "I2C initialized successfully");
+
+    ssd1306_init(&ssd1306, 128, 64);
+    ssd1306_clear_screen(&ssd1306, false);
+    ssd1306_contrast(&ssd1306, 0xff);
 
     int8_t rslt = BMP280_OK;
     double temp;
@@ -89,7 +95,13 @@ void read_data(void *parameters)
                  pres);
 
         ESP_LOGI(TAG_I2C, "%s", msgbuf);
-        xQueueSend(sendQueue, &msgbuf, ( TickType_t ) 0);
+        xQueueSend(sendQueue, &msgbuf, (TickType_t)0);
+
+        char temperature[12];
+        // char pressure[12];
+        sprintf(temperature, "%.2f degC", temp);
+
+        ssd1306_display_text_x3(&ssd1306, 0, temperature, 12, false);
 
         vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
