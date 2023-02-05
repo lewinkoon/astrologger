@@ -80,19 +80,19 @@ void read_data(void *parameters)
         vTaskDelay(100 / portTICK_PERIOD_MS);
 
         rslt = bmp280_get_uncomp_data(&bmp280_data, &bmp280);
-        ESP_LOGI(TAG_I2C, "BMP280 RAW %d", rslt);
-        ESP_LOGI(TAG_I2C, "BMP280 RAW TEMP VALUE %ld", bmp280_data.uncomp_temp);
-        ESP_LOGI(TAG_I2C, "BMP280 RAW PRESS VALUE %ld", bmp280_data.uncomp_press);
+        // ESP_LOGI(TAG_I2C, "BMP280 RAW %d", rslt);
+        // ESP_LOGI(TAG_I2C, "BMP280 RAW TEMP VALUE %ld", bmp280_data.uncomp_temp);
+        // ESP_LOGI(TAG_I2C, "BMP280 RAW PRESS VALUE %ld", bmp280_data.uncomp_press);
 
         rslt = bmp280_get_comp_temp_double(&temp, bmp280_data.uncomp_temp, &bmp280);
-        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE TEMP %d", rslt);
-        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE TEMP VALUE %f", temp);
+        // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE TEMP %d", rslt);
+        // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE TEMP VALUE %f", temp);
 
         rslt = bmp280_get_comp_pres_double(&pres, bmp280_data.uncomp_press, &bmp280);
-        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES %d", rslt);
-        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES VALUE %f", pres);
+        // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES %d", rslt);
+        // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES VALUE %f", pres);
 
-        snprintf(msgbuf, sizeof(msgbuf), "{\"time\":\"2099-12-31\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}\n",
+        snprintf(msgbuf, sizeof(msgbuf), "{\"time\":\"2099-12-31\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}",
                  temp,
                  pres / 100);
 

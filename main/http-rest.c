@@ -12,6 +12,8 @@
 
 const char *TAG_REST = "REST";
 
+void blink_led(bool led_state);
+
 extern const char root_cert_pem_start[] asm("_binary_root_cert_pem_start");
 extern const char root_cert_pem_end[] asm("_binary_root_cert_pem_end");
 
@@ -140,14 +142,16 @@ void http_request(void *pvParameters)
     {
         if (xQueueReceive(sendQueue, &msgbuf, (TickType_t)2))
         {
-            printf("Received data from queue == %s\n", msgbuf);
+            blink_led(1);
+
+            // printf("Received data from queue == %s\n", msgbuf);
             post_data = msgbuf;
 
             esp_http_client_set_post_field(client, post_data, strlen(post_data));
             esp_err_t err = esp_http_client_perform(client);
             if (err == ESP_OK)
             {
-                ESP_LOGI(TAG_REST, "HTTP Status = %d, content_length = %" PRIu64,
+                ESP_LOGI(TAG_REST, "HTTP Status = %d, content_length = %llu\n",
                          esp_http_client_get_status_code(client),
                          esp_http_client_get_content_length(client));
             }
@@ -155,9 +159,10 @@ void http_request(void *pvParameters)
             {
                 ESP_LOGE(TAG_REST, "HTTP request failed: %s", esp_err_to_name(err));
             }
+
+            blink_led(0);
         }
         // ESP_LOG_BUFFER_HEX(TAG_REST, local_response_buffer, strlen(local_response_buffer));
-
         vTaskDelay(2000 / portTICK_PERIOD_MS);
     }
 
