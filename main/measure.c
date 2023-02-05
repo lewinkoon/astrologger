@@ -27,6 +27,8 @@ void read_data(void *parameters)
     ssd1306_init(&ssd1306, 128, 64);
     ssd1306_clear_screen(&ssd1306, false);
     ssd1306_contrast(&ssd1306, 0xff);
+    ssd1306_display_text(&ssd1306, 1, " Temperature", 12, false);
+    ssd1306_display_text(&ssd1306, 5, " Pressure", 10, false);
 
     int8_t rslt = BMP280_OK;
     double temp;
@@ -88,20 +90,22 @@ void read_data(void *parameters)
 
         rslt = bmp280_get_comp_pres_double(&pres, bmp280_data.uncomp_press, &bmp280);
         ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES %d", rslt);
-        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES VALUE %f", pres / 256);
+        ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES VALUE %f", pres);
 
         snprintf(msgbuf, sizeof(msgbuf), "{\"time\":\"2099-12-31\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}\n",
                  temp,
-                 pres);
+                 pres / 100);
 
         ESP_LOGI(TAG_I2C, "%s", msgbuf);
         xQueueSend(sendQueue, &msgbuf, (TickType_t)0);
 
-        char temperature[12];
-        // char pressure[12];
-        sprintf(temperature, "%.2f degC", temp);
+        char show_temp[12];
+        sprintf(show_temp, " %.2f degC", temp);
+        ssd1306_display_text(&ssd1306, 2, show_temp, 12, false);
 
-        ssd1306_display_text_x3(&ssd1306, 0, temperature, 12, false);
+        char show_pres[12];
+        sprintf(show_pres, " %.2f hPa", pres / 100);
+        ssd1306_display_text(&ssd1306, 6, show_pres, 12, false);
 
         vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
