@@ -1,7 +1,4 @@
 #include "esp_log.h"
-#include "esp_sntp.h"
-#include "esp_netif_sntp.h"
-#include "lwip/ip_addr.h"
 #include "nvs_flash.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -10,6 +7,7 @@
 #include "sdkconfig.h"
 
 void configure_led(void);
+
 void wifi_init_sta(void);
 void read_data(void *parameters);
 void http_request(void *parameters);
@@ -28,14 +26,6 @@ void app_main(void)
     ESP_ERROR_CHECK(ret);
     sendQueue = xQueueCreate(10, 128);
     wifi_init_sta();
-
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    ESP_LOGI("TIME", "Time: %u", timeinfo.tm_year);
-    esp_sntp_config_t config = ESP_NETIF_SNTP_DEFAULT_CONFIG("pool.ntp.org");
-    esp_netif_sntp_init(&config);
 
     xTaskCreate(&read_data, "read_data", 8192, NULL, 5, NULL);
 

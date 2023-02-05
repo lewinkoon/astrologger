@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "bmp280.h"
 #include "esp_log.h"
+#include "esp_sntp.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "ssd1306.h"
@@ -13,6 +14,8 @@ QueueHandle_t sendQueue;
 int8_t i2c_write(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t cnt);
 int8_t i2c_read(uint8_t dev_addr, uint8_t reg_addr, uint8_t *reg_data, uint8_t cnt);
 
+void update_time(void);
+
 static void delay_ms(uint32_t ms)
 {
     vTaskDelay(ms / portTICK_PERIOD_MS);
@@ -20,6 +23,25 @@ static void delay_ms(uint32_t ms)
 
 void read_data(void *parameters)
 {
+    time_t now;
+    struct tm timeinfo;
+
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_init();
+
+    int retry = 0;
+    const int retry_count = 15;
+    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count)
+    {
+        ESP_LOGI("TIME", "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    }
+
+    char strftime_buf[64];
+    setenv("TZ", "CET-1CEST,M3.5.0,M10.5.0/3", 1);
+    tzset();
+
     SSD1306_t ssd1306;
     i2c_master_init(&ssd1306, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
     ESP_LOGI(TAG_I2C, "I2C initialized successfully");
@@ -27,8 +49,9 @@ void read_data(void *parameters)
     ssd1306_init(&ssd1306, 128, 64);
     ssd1306_clear_screen(&ssd1306, false);
     ssd1306_contrast(&ssd1306, 0xff);
-    ssd1306_display_text(&ssd1306, 1, " Temperature", 12, false);
-    ssd1306_display_text(&ssd1306, 5, " Pressure", 10, false);
+    ssd1306_display_text(&ssd1306, 0, "Time", 4, false);
+    ssd1306_display_text(&ssd1306, 3, "Temperature", 11, false);
+    ssd1306_display_text(&ssd1306, 6, "Pressure", 8, false);
 
     int8_t rslt = BMP280_OK;
     double temp;
@@ -74,7 +97,11 @@ void read_data(void *parameters)
     ESP_LOGI(TAG_I2C, "BMP280 SET CONFIG FILTER %u", bmp280.conf.filter);
 
     while (1)
-    {
+    {   
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%dT%X", &timeinfo);
+
         rslt = bmp280_set_power_mode(BMP280_FORCED_MODE, &bmp280);
 
         vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -92,20 +119,25 @@ void read_data(void *parameters)
         // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES %d", rslt);
         // ESP_LOGI(TAG_I2C, "BMP280 COMPENSATE PRES VALUE %f", pres);
 
-        snprintf(msgbuf, sizeof(msgbuf), "{\"time\":\"2099-12-31\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}",
+        snprintf(msgbuf, sizeof(msgbuf), "{\"time\":\"%s\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}",
+                 strftime_buf,
                  temp,
                  pres / 100);
 
         ESP_LOGI(TAG_I2C, "%s", msgbuf);
         xQueueSend(sendQueue, &msgbuf, (TickType_t)0);
 
-        char show_temp[12];
-        sprintf(show_temp, " %.2f degC", temp);
-        ssd1306_display_text(&ssd1306, 2, show_temp, 12, false);
+        char show_time[9];
+        strftime(show_time, sizeof(show_time), "%X", &timeinfo);
+        ssd1306_display_text(&ssd1306, 1, show_time, 9, false);
 
-        char show_pres[12];
-        sprintf(show_pres, " %.2f hPa", pres / 100);
-        ssd1306_display_text(&ssd1306, 6, show_pres, 12, false);
+        char show_temp[10];
+        sprintf(show_temp, "%.2f degC", temp);
+        ssd1306_display_text(&ssd1306, 4, show_temp, 10, false);
+
+        char show_pres[10];
+        sprintf(show_pres, "%.2f hPa", pres / 100);
+        ssd1306_display_text(&ssd1306, 7, show_pres, 10, false);
 
         vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
