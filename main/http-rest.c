@@ -7,8 +7,8 @@
 
 #include "credentials.h"
 
-#define MAX_HTTP_RECV_BUFFER 4096
-#define MAX_HTTP_OUTPUT_BUFFER 4096
+#define MAX_HTTP_RECV_BUFFER 512
+#define MAX_HTTP_OUTPUT_BUFFER 2048
 
 const char *TAG_REST = "REST";
 
@@ -115,11 +115,11 @@ static esp_err_t _http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-void http_request(void *pvParameters)
+void http_request(void *parameters)
 {
-    char msgbuf[128];
+    char msgbuf[256];
     char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
-    const char *post_data = "{\"time\":\"2099-12-31 00:00:00\",\"temperature\":\"99.99\",\"pressure\":\"999.99\"}";
+    const char *post_data = "{\"time\":\"2099-12-31T00:00:00\",\"temperature\":\"99.99\",\"pressure\":\"999.99\"}";
 
     esp_http_client_config_t config = {
         .host = DB_HOST,
@@ -128,7 +128,7 @@ void http_request(void *pvParameters)
         // .crt_bundle_attach = esp_crt_bundle_attach,
         .cert_pem = root_cert_pem_start,
         .user_data = local_response_buffer,
-        .buffer_size = 1024,
+        .buffer_size = 256,
         .buffer_size_tx = 1024,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
