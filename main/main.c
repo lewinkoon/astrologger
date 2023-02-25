@@ -47,7 +47,7 @@ void app_main(void)
     esp_timer_handle_t timer;
     ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer));
 
-    ESP_ERROR_CHECK(esp_timer_start_periodic(timer, 30000000));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(timer, 60000000));
 
     // send data to database
     xTaskCreate(&http_request, "http_request", 8196, NULL, 2, NULL);
