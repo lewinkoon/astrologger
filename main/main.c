@@ -6,7 +6,8 @@
 #include "freertos/queue.h"
 #include "sdkconfig.h"
 
-void configure_led(void);
+void flashing_led(void *parameters);
+void reset_led(void);
 void wifi_init_sta(void);
 void sync_time(void);
 void init_sensor(void);
@@ -25,11 +26,12 @@ void app_main(void)
     }
     ESP_ERROR_CHECK(ret);
 
-    // configure led gpio
-    configure_led();
-
     // initialize sensor data queue
     sendQueue = xQueueCreate(10, 128);
+
+    // configure led gpio
+    TaskHandle_t xHandle;
+    xTaskCreate(&flashing_led, "flashing_led", 2048, NULL, 5, &xHandle);
 
     // initialize sensor over i2c
     init_sensor();
@@ -39,6 +41,9 @@ void app_main(void)
 
     // sync time over ntp
     sync_time();
+
+    vTaskDelete(xHandle);
+    reset_led();
 
     // timer
     const esp_timer_create_args_t timer_args = {
@@ -50,5 +55,5 @@ void app_main(void)
     ESP_ERROR_CHECK(esp_timer_start_periodic(timer, 60000000));
 
     // send data to database
-    xTaskCreate(&http_request, "http_request", 8196, NULL, 2, NULL);
+    xTaskCreate(&http_request, "http_request", 8196, NULL, 5, NULL);
 }
