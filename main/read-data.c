@@ -114,7 +114,7 @@ void timer_callback(void *args)
 
     snprintf(data_buff, sizeof(data_buff), "{\"time\":\"%s\",\"temperature\":\"%.2f\",\"pressure\":\"%.2f\"}",
              timestamp,
-             temp,
+             temp - 2,
              pres / 100);
 
     ESP_LOGI(TAG_I2C, "%s", data_buff);
@@ -125,7 +125,7 @@ void timer_callback(void *args)
     ssd1306_display_text(&ssd1306, 1, show_time, 9, false);
 
     char show_temp[10];
-    sprintf(show_temp, "%.2f degC", temp);
+    sprintf(show_temp, "%.2f degC", temp - 2);
     ssd1306_display_text(&ssd1306, 4, show_temp, 10, false);
 
     char show_pres[10];

@@ -123,7 +123,7 @@ void http_request(void *parameters)
 
     esp_http_client_config_t config = {
         .host = DB_HOST,
-        .path = "/rest/v1/BMP280",
+        .path = "/rest/v1/bmp280",
         .event_handler = _http_event_handler,
         // .crt_bundle_attach = esp_crt_bundle_attach,
         .cert_pem = root_cert_pem_start,
@@ -163,7 +163,7 @@ void http_request(void *parameters)
             blink_led(0);
         }
         // ESP_LOG_BUFFER_HEX(TAG_REST, local_response_buffer, strlen(local_response_buffer));
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 
     esp_http_client_cleanup(client);
